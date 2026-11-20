@@ -1,7 +1,8 @@
 'use strict';
 
 // Общий с сайтом школы ключ: сайт создаёт профиль при входе и показывает прогресс на главной
-var STORAGE_KEY = 'bloop-cabinet-v1';
+var STORAGE_KEY = 'sevalumo-cabinet-v1';
+var LEGACY_STORAGE_KEY = 'bloop-cabinet-v1'; // old brand name: read once, then moved (the site's catalog.js migrates it too)
 
 // Сайт школы. На GitHub Pages это соседний репозиторий kids-ai-courses на том же домене,
 // при локальном запуске кабинет лежит в подпапке сайта — тогда сайт на уровень выше.
@@ -87,6 +88,10 @@ var app = {
   load: function () {
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
+      if (raw === null) {
+        raw = localStorage.getItem(LEGACY_STORAGE_KEY);
+        if (raw !== null) { localStorage.setItem(STORAGE_KEY, raw); localStorage.removeItem(LEGACY_STORAGE_KEY); }
+      }
       var st = raw ? Object.assign(Game.newState(), JSON.parse(raw)) : null;
       if (st && st.age === '14-17') st.age = '15-17'; // миграция: старое id старшей группы
       return st;
@@ -134,6 +139,7 @@ var app = {
     $('#chip-courses').parentNode.hidden = !mine.length; // для возраста нет курсов в кабинете — счётчик не нужен
 
     this.renderStats(st);
+    this.renderTrail();
     this.renderCourses();
     this.renderBadges();
     this.renderDaily();
@@ -153,37 +159,57 @@ var app = {
     }).join('');
   },
 
-  // Только курсы для возраста из профиля — тот же возраст видит сайт школы
+  // «My AI Trail»: the child's own trail as a big card, then the four age groups as links.
+  // The trail is the course of the school site (catalog.js, loaded from SITE_URL); the cabinet's own COURSES list
+  // (empty now) is drawn below it and never repeats the trail.
+  renderTrail: function () {
+    var s = this.state;
+    var group = findAgeGroup(s.age);
+    var C = typeof SEVALUMO_CATALOG === 'undefined' ? null : SEVALUMO_CATALOG;
+    var hero = $('#trail-hero'), row = $('#trail-groups');
+
+    if (!group) {
+      hero.innerHTML = '<div class="course-empty"><p id="trail-title">Tell Sevi how old you are, and you’ll see the AI Trail made for your age.</p>' +
+        '<button class="btn btn--primary" type="button" data-open-welcome>Choose my age</button></div>';
+      row.innerHTML = '';
+      return;
+    }
+    var v = Trails.view(group.id, C, localStorage, SITE_URL);
+    var action = v.finished ? 'Play again' : v.started ? 'Continue' : 'Play';
+    var meta = [v.ages || ('Ages ' + group.min + '–' + group.max), v.lessons ? v.lessons + ' lessons' : ''].filter(Boolean).join(' · ');
+    var prog = v.progress.total
+      ? '<div class="trail__prog"><div class="bar" role="progressbar" aria-label="Trail progress" aria-valuemin="0" aria-valuemax="' + v.progress.total +
+        '" aria-valuenow="' + v.progress.done + '"><div class="bar__fill" style="width:' + v.progress.percent + '%"></div></div>' +
+        '<span>' + v.progress.done + ' of ' + v.progress.total + ' lessons</span></div>'
+      : '';
+    hero.innerHTML = '<article class="trail" data-trail="' + v.track + '">' +
+      '<div class="trail__art" aria-hidden="true">' + this.bobik(v.finished ? 'victory' : 'hello', 'bust') + '</div>' +
+      '<div class="trail__body">' +
+        '<span class="trail__tag">My AI Trail</span>' +
+        '<h2 class="display" id="trail-title">' + esc(v.title) + '</h2>' +
+        '<p class="trail__meta">' + esc(meta) + '</p>' +
+        '<p class="trail__line">' + esc(v.line) + '</p>' + prog +
+        '<a class="btn btn--primary btn--big" href="' + esc(v.href) + '" data-trail-go aria-label="' + action + ' ' + esc(v.title) + '">' + action + '</a>' +
+      '</div></article>';
+
+    row.innerHTML = '<h3 class="trail-groups__title">All age groups</h3><ul class="trail-groups">' +
+      Trails.allGroups(AGE_GROUPS, group.id, SITE_URL).map(function (g) {
+        return '<li><a class="btn ' + (g.own ? 'btn--primary' : 'btn--white') + ' btn--sm" href="' + esc(g.href) + '"' +
+          (g.own ? ' aria-current="true"' : '') + '><span class="trail-groups__name">' + esc(g.name) + ' ' + g.ages + '</span>' +
+          (g.own ? ' <span class="trail-groups__you">You</span>' : '') + '</a></li>';
+      }).join('') + '</ul>' +
+      '<p class="trail-groups__more"><button class="link-btn" type="button" data-open-welcome>Change my age</button></p>';
+  },
+
+  // Only the cabinet's own courses for the age from the profile (none now: the section stays hidden)
   renderCourses: function () {
     var self = this, s = this.state;
     var group = findAgeGroup(s.age);
     var mine = coursesForAge(s.age);
+    $('#courses').hidden = !mine.length;
     $('#courses-age').textContent = group ? 'Ages ' + group.min + '–' + group.max : '';
-    $('#courses-age-btn').hidden = !group;
 
-    if (!group) {
-      $('#course-list').innerHTML = '<div class="course-empty"><p>Tell Sevi how old you are, and you’ll see the courses made for your age.</p>' +
-        '<button class="btn btn--primary" type="button" data-open-welcome>Choose my age</button></div>';
-      return;
-    }
-    // Real school-site courses for this age (same list and same rule as the site's courses/ page)
-    var site = this.siteCourses(group);
-    var more;
-    if (site.length) {
-      more = '<div class="site-courses">' + site.map(function (c) {
-        var href = c.playable && !c.url ? '?start=' + encodeURIComponent(c.id) : SITE_URL + c.url;
-        return '<article class="site-course"><span class="course__age">' + esc(BLOOP_CATALOG.courseAges(c)) + '</span>' +
-          '<h3>' + esc(c.title) + '</h3><p>' + esc(c.desc) + '</p>' +
-          '<a class="btn btn--primary" href="' + esc(href) + '" aria-label="Start ' + esc(c.title) + '">Start</a></article>';
-      }).join('') + '</div>' +
-      '<p class="site-courses__all"><a class="link-btn" href="' + SITE_URL + 'courses/#age-' + group.id + '">See all courses</a></p>';
-    } else {
-      more = group.more
-        ? '<div class="course-empty"><p>' + group.more.text + '</p><a class="btn btn--primary" href="' + SITE_URL + group.more.href + '">' + group.more.link + '</a></div>'
-        : '';
-    }
-
-    $('#course-list').innerHTML = more + mine.map(function (c, k) {
+    $('#course-list').innerHTML = mine.map(function (c, k) {
       var cs = Game.courseStatus(s, c);
       var nodes = c.lessons.map(function (l, i) {
         var rec = s.lessons[l.id];
@@ -221,28 +247,12 @@ var app = {
     }).join('');
   },
 
-  // Courses of the school site for this age group. The list lives in the site's catalog.js (one source of truth),
-  // loaded from SITE_URL by loadCatalog(). Without it (offline, blocked, not deployed) this is empty and the
-  // old "no courses yet" text with a link to the site is shown instead.
-  siteCourses: function (group) {
-    if (typeof BLOOP_CATALOG === 'undefined') return [];
-    var C = BLOOP_CATALOG;
-    return C.COURSES.filter(function (c) {
-      var g = C.groupOf(c);
-      return g && g.id === group.id && (c.url || c.playable);
-    });
-  },
-
   loadCatalog: function () {
     var self = this, tag = document.createElement('script');
     tag.src = SITE_URL + 'catalog.js';
-    // Only the course list changes, and only when the catalog has courses for this age:
-    // a full render() would redraw Sevi and the stats a second time for nothing.
-    tag.onload = function () {
-      var group = self.state && findAgeGroup(self.state.age);
-      if (group && self.siteCourses(group).length) self.renderCourses();
-    };
-    document.head.appendChild(tag); // on error: nothing to do, the fallback text stays
+    // The trail card shows the real title and lesson count from the catalog; without it (offline, not deployed) the card still works.
+    tag.onload = function () { if (self.state) self.renderTrail(); };
+    document.head.appendChild(tag);
   },
 
   starIcons: function (n) {

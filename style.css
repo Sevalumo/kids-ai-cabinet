@@ -158,6 +158,33 @@ html[data-sevi-form="pros"] { --sevi-full: 350; }
 .bar__fill { height: 100%; border-radius: inherit; background: var(--acc); transition: width .8s var(--ease); }
 .course__done { font-weight: 800; white-space: nowrap; padding: 6px 14px; border-radius: 999px; background: var(--ink); color: var(--page); }
 
+/* ---------- AI Trail (the child's own course, top of the cabinet) ---------- */
+.trail-sec { padding-top: 30px; }
+.trail { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: clamp(16px, 3vw, 32px); padding: clamp(20px, 3vw, 32px); border-radius: var(--rad); background: color-mix(in oklch, var(--acc) 16%, var(--card)); box-shadow: var(--shadow); }
+.trail__art { display: grid; place-items: center; width: clamp(110px, 16vw, 170px); aspect-ratio: 1; border-radius: calc(var(--rad) * .7 + 4px); background: color-mix(in oklch, var(--acc) 34%, var(--card)); }
+.trail__art .sevi-s7 svg { width: auto; height: clamp(92px, 13vw, 140px); margin: 0 auto; }
+.trail__body { min-width: 0; display: grid; gap: 8px; justify-items: start; }
+.trail__tag { padding: 4px 12px; border-radius: 999px; background: var(--ink); color: var(--page); font-size: .85rem; font-weight: 800; }
+.trail__body h2 { font-size: clamp(1.7rem, 3.6vw, 2.6rem); line-height: 1.05; overflow-wrap: anywhere; }
+.trail__meta { margin: 0; font-weight: 700; color: var(--soft); }
+.trail__line { margin: 0; max-width: 38em; font-weight: 600; }
+.trail__prog { display: grid; gap: 6px; width: min(100%, 420px); font-weight: 700; font-variant-numeric: tabular-nums; }
+.trail__prog .bar { margin-top: 0; height: 14px; }
+.btn--big { min-height: 58px; padding: 0 40px; font-size: 1.2rem; margin-top: 6px; }
+.trail-groups__title { margin: 28px 0 12px; font-size: 1.15rem; }
+.trail-groups { display: flex; flex-wrap: wrap; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.trail-groups .btn { min-height: 48px; }
+.trail-groups__name { white-space: nowrap; }
+.trail-groups__you { padding: 2px 10px; border-radius: 999px; background: var(--ink); color: var(--page); font-size: .8rem; font-weight: 800; }
+.trail-groups__more { margin: 10px 0 0; }
+.trail-groups__more .link-btn { margin-left: 0; min-height: 44px; }
+@media (max-width: 560px) {
+    .trail { grid-template-columns: minmax(0, 1fr); justify-items: start; }
+    .trail__art { width: 110px; }
+    .trail-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .trail-groups .btn { width: 100%; flex-wrap: wrap; gap: 2px 8px; text-align: center; padding: 6px 10px; }
+}
+
 /* Lesson path */
 .path { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 22px 0 0; padding: 0; list-style: none; }
 .path::before { content: ''; position: absolute; top: 33px; left: 16.6%; right: 16.6%; border-top: 3px dashed var(--line); }
