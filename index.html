@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <a class="skip" href="#courses">Skip to my courses</a>
+    <a class="skip" href="#trail">Skip to my AI Trail</a>
 
     <header class="nav">
         <div class="wrap nav__in">
@@ -64,13 +64,17 @@
 
     <main class="layout">
         <div class="layout__main">
+            <section class="trail-sec" id="trail" aria-labelledby="trail-title">
+                <div id="trail-hero"></div>
+                <div id="trail-groups"></div>
+            </section>
+
             <section class="stats" id="stats" aria-label="My stats"></section>
 
-            <section id="courses">
+            <section id="courses" hidden>
                 <div class="section-head">
-                    <h2>My courses <span class="count" id="courses-age"></span></h2>
-                    <p>Pass a lesson to unlock the next one. 3 stars = every answer right!
-                        <button class="link-btn" type="button" id="courses-age-btn" data-open-welcome hidden>Change my age</button></p>
+                    <h2>More lessons <span class="count" id="courses-age"></span></h2>
+                    <p>Pass a lesson to unlock the next one. 3 stars = every answer right!</p>
                 </div>
                 <div class="courses" id="course-list"></div>
             </section>
@@ -160,6 +164,7 @@
     <script src="js/bobik.js"></script>
     <script src="js/theme.js"></script>
     <script src="js/data.js"></script>
+    <script src="js/trails.js"></script>
     <script src="js/game.js"></script>
     <script src="js/app.js"></script>
 </body>
